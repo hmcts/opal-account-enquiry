@@ -168,3 +168,9 @@ be-developer-config:
 printservice:
   maxRetries: 3
   pageSize: 100
+
+idam:
+  s2s-auth:
+    url: http://localhost:4502  # URL of the opal-service-auth-provider-app for JWT validation
+  s2s-authorised:
+    services: opal-external-api

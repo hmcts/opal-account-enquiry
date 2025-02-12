@@ -87,7 +87,7 @@ public abstract class LegacyService {
     }
 
     public <T> T postToGateway(String actionType, Class<T> responseType, Object request) {
-        getLog().info("postToGateway: POST to Gateway: {}", legacyGateway.getUrl()
+        getLog().debug("postToGateway: POST to Gateway: {}", legacyGateway.getUrl()
             + "?" + ACTION_TYPE + "=" + actionType);
 
         // Create a UriComponentsBuilder and add parameters
@@ -103,6 +103,43 @@ public abstract class LegacyService {
             .toEntity(String.class);
 
         return extractResponse(responseEntity, responseType);
+    }
+
+    private void pingUrl(String url) {
+        getLog().info("Pinging URL: {}", url);
+        try {
+            ResponseEntity<String> response = restClient.get()
+                .uri(url)
+                .retrieve()
+                .toEntity(String.class);
+            getLog().info("Ping response: {}", response.getStatusCode());
+        } catch (Exception e) {
+            getLog().error("Ping failed for URL: {}", url, e);
+        }
+    }
+
+    public ResponseEntity<String> postToGatewayRawResponse(String actionType, Object request) {
+        String legacyGatewayUrl = legacyGateway.getUrl();
+        String googleUrl = "https://www.google.com";
+        pingUrl(googleUrl);
+        pingUrl(legacyGatewayUrl);
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString("")
+            .queryParam(ACTION_TYPE, actionType);
+        String fullUrl = legacyGatewayUrl + builder.toUriString();
+        getLog().debug("postToGateway: POST to Gateway URL: {}", fullUrl);
+
+        String authorizationHeader = encodeBasic(legacyGateway.getUsername(), legacyGateway.getPassword());
+        getLog().debug("postToGateway: Headers: AUTHORIZATION={}, Content-Type={}", authorizationHeader,
+                       MediaType.APPLICATION_JSON);
+
+        return restClient.post()
+            .uri(fullUrl)
+            .header("AUTHORIZATION", authorizationHeader)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(request)
+            .retrieve()
+            .toEntity(String.class);
     }
 
     private String encodeBasic(String username, String password) {
